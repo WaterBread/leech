@@ -26,8 +26,6 @@ export const getTorrentStatusSummary = (state: any): TorrentStatusSummary => {
 
 export const getTorrentFileList = (torrentHash: string): ((state: any) => TorrentFileList) => {
   return (state: any) => {
-    console.log(torrentHash);
-    console.log(get(state, `torrents.fileList.${torrentHash}`));
     return get(state, `torrents.fileList.${torrentHash}`, {});
   };
 };

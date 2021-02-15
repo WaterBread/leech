@@ -10,17 +10,12 @@ export const isDeleteModalOpen = (state: any) => {
   return get(state, 'toolbar.deleteModalVisible', false);
 };
 
-interface SelectedTorrent {
-  hash: string;
-  torrent: MappedTorrent | undefined;
-}
-export const getSelectedTorrent = (state: any): SelectedTorrent => {
-  const hash = get(state, 'toolbar.selectedTorrentHash');
-  const torrents: MappedTorrent[] = get(state, 'torrents.torrentList', []);
+export const getSelectedTorrents = (state: any): MappedTorrent[] => {
+  const hashes: string[] = get(state, 'toolbar.selectedTorrentHashes');
+  const allTorrents: MappedTorrent[] = get(state, 'torrents.torrentList', []);
 
-  const torrent = torrents.find(torrent => torrent.hash === hash);
-
-  return { hash, torrent };
+  const selectedTorrents = allTorrents.filter(torrent => hashes.includes(torrent.hash));
+  return selectedTorrents;
 };
 
 export const getSearchTerm = (state: any) => {

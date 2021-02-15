@@ -1,0 +1,32 @@
+version: "3"
+services:
+  rtorrent:
+    image: looselyrigorous/rtorrent:latest
+    volumes:
+      - "rtorrent-sock:/socket"
+      - "./downloads:/downloads"
+      - "./set_permission.sh:/set_permission.sh"
+    ports:
+      - "49161:49161"
+      - "49161:49161/udp"
+    environment:
+      - PUID=1000
+      - PGID=1000
+    healthcheck:
+      interval: 2s
+      timeout: 1s
+      retries: 3
+      test: "sh /set_permission.sh"
+  web:
+    image: nginx
+    user: root
+    volumes:
+    - ./nginx_config:/etc/nginx/templates
+    - rtorrent-sock:/socket
+    ports:
+    - "1234:1234"
+    environment:
+    - NGINX_PORT=1234
+    - SOCKET_PATH=/socket
+volumes:
+  rtorrent-sock: {}

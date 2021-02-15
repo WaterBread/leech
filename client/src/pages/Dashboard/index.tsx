@@ -28,7 +28,7 @@ const Dashboard = (): JSX.Element => {
       <Toolbar />
 
       <WebSocket
-        url="ws://localhost:3001/torrentlist"
+        url={`ws://${process.env.REACT_APP_API_URL}/torrentlist`}
         onMessage={(data: any) => {
           dispatch({ type: GET_TORRENT_LIST_SUCCESS, payload: data });
         }}

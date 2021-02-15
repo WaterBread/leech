@@ -8,7 +8,7 @@ import { withStyles, Theme, darken, makeStyles } from '@material-ui/core/styles'
 
 const useStyles = makeStyles(theme => ({
   progressBarRoot: {
-    height: '100%',
+    width: '100%',
   },
   percent: {
     position: 'absolute',

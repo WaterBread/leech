@@ -1,0 +1,9 @@
+server {
+
+  listen ${NGINX_PORT};
+  location / {
+    include scgi_params;
+    scgi_pass unix:${SOCKET_PATH}/rtorrent.sock;
+  }
+}
+

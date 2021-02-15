@@ -20,7 +20,11 @@ render(
       <CustomThemeProvider>
         {theme => {
           return (
-            <ThemeProvider theme={createMuiTheme(theme)}>
+            <ThemeProvider
+              theme={createMuiTheme({
+                ...theme,
+              })}
+            >
               <CssBaseline>
                 <Router />
               </CssBaseline>

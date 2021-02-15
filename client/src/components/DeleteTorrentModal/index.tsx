@@ -1,29 +1,43 @@
-import { Checkbox, FormControlLabel, Tooltip } from '@material-ui/core';
-import Button from '@material-ui/core/Button';
-import Dialog from '@material-ui/core/Dialog';
-import DialogActions from '@material-ui/core/DialogActions';
-import DialogContent from '@material-ui/core/DialogContent';
-import DialogTitle from '@material-ui/core/DialogTitle';
-import List from '@material-ui/core/List';
-import ListItem from '@material-ui/core/ListItem';
-import ListItemText from '@material-ui/core/ListItemText';
-import Paper from '@material-ui/core/Paper';
-import { makeStyles } from '@material-ui/core/styles';
-import Typography from '@material-ui/core/Typography';
-import CheckIcon from '@material-ui/icons/Check';
-import ClearIcon from '@material-ui/icons/Clear';
-import { checkFilesExist, deleteFiles } from 'actions/filelist';
+import {
+  Checkbox,
+  FormControlLabel,
+  Tooltip,
+  makeStyles,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  Typography,
+  List,
+  ListItem,
+  ListItemText,
+  Accordion,
+  Paper,
+  DialogActions,
+  AccordionSummary,
+  ListSubheader,
+  AccordionDetails,
+  darken,
+  useTheme,
+  Collapse,
+} from '@material-ui/core';
+import { Check, Clear, ExpandMore } from '@material-ui/icons';
+import { deleteFiles, checkFilesExist } from 'actions/filelist';
 import { toggleDeleteModal } from 'actions/toolbar';
 import { deleteTorrent, getTorrentFileList } from 'actions/torrents';
 import Alert from 'components/Form/Alert';
+import TorrentFileList from 'interfaces/torrentFileList';
+import { uniq } from 'lodash';
 import get from 'lodash/get';
 import includes from 'lodash/includes';
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { getExistingFiles } from 'selectors/filelist';
-import { getSelectedTorrent } from 'selectors/toolbar';
-import { getTorrentFileList as getTorrentFileListSelector } from 'selectors/torrents';
+import { getSelectedTorrents } from 'selectors/toolbar';
 import networkRequest from 'utils/networkRequest';
+import { FileListState } from 'interfaces/filelist';
+import StatChip from 'components/StatChip';
+import Loading from 'components/Loading';
 
 const useStyles = makeStyles(theme => ({
   root: {
@@ -49,6 +63,8 @@ const useStyles = makeStyles(theme => ({
     overflow: 'auto',
     width: '100%',
   },
+  nested: { paddingLeft: theme.spacing(4) },
+  noShrink: { whiteSpace: 'nowrap' },
 }));
 
 const singleDelete = 'Are you sure you want to delete this torrent?';
@@ -60,41 +76,91 @@ enum DeleteState {
   FILES_DELETE_FAILED,
 }
 
+interface FileList {
+  torrentName: string;
+  torrentHash: string;
+  torrentSize: number;
+  torrentFiles: TorrentFileList;
+}
+
 const DeleteTorrentModal = () => {
   const dispatch = useDispatch();
-  const selectedTorrent = useSelector(getSelectedTorrent);
-  const selectedTorrentFileList = useSelector(getTorrentFileListSelector(selectedTorrent.hash));
-  const existingFiles = useSelector(getExistingFiles);
+  const selectedTorrents = useSelector(getSelectedTorrents);
+
+  const [fileList, setFileList] = useState([] as FileList[]);
+  const [mergedFiles, setMergedFiles] = useState([] as string[][]);
+
+  const [existingFiles, setExistingFiles] = useState([] as FileListState[]);
+  const [isDeleting, setDeleting] = useState(false);
 
   const [currentStage, setStage] = useState(DeleteState.INITIAL);
 
   const [withDataChecked, setWithDataChecked] = useState(false);
   const [deleteSummary, setDeleteSummary] = useState({ success: [], failure: [] });
 
+  const getDeletableFilesFromList = (list: FileList) => {
+    const basePath = list.torrentFiles.basePath;
+    const torrentFiles = list.torrentFiles.fileList;
+    return torrentFiles.map(path => [...basePath, ...path]);
+  };
+
+  console.log(existingFiles);
+
+  useEffect(() => {
+    const updateFileList = async () => {
+      const promises = selectedTorrents.map(torrent => networkRequest(getTorrentFileList(torrent.hash).request));
+      const filesOfTorrents = (await Promise.all(promises)).map((torrentFiles, index) => {
+        const torrent = selectedTorrents[index];
+        return {
+          torrentName: torrent.filename,
+          torrentHash: torrent.hash,
+          torrentSize: torrent.sizeBytes,
+          torrentFiles: torrentFiles.response,
+        };
+      });
+      setFileList(filesOfTorrents);
+    };
+
+    updateFileList();
+  }, [selectedTorrents]);
+
+  useEffect(() => {
+    const getDeletableFilesFromListArray = (fileList: FileList[]) => {
+      const files = fileList.reduce((prevList, list) => {
+        return [...prevList, ...getDeletableFilesFromList(list)];
+      }, [] as string[][]);
+      return uniq(files);
+    };
+    const mergedFiles = getDeletableFilesFromListArray(fileList);
+    setMergedFiles(mergedFiles);
+  }, [fileList]);
+
   const handleClose = () => {
     dispatch(toggleDeleteModal(false));
   };
 
   const deleteSelectedFiles = async () => {
-    const deleteFilePaths = selectedTorrentFileList.fileList.map(path => [
-      ...selectedTorrentFileList.basePath,
-      ...path,
-    ]);
-    const responseBody = await networkRequest(deleteFiles(deleteFilePaths).request);
-    const success = get(responseBody, 'response.success', []);
-    const failure = get(responseBody, 'response.failure', []);
+    try {
+      setDeleting(true);
+      const responseBody = await networkRequest(deleteFiles(mergedFiles).request);
+      const success = get(responseBody, 'response.success', []);
+      const failure = get(responseBody, 'response.failure', []);
 
-    return { success, failure };
+      return { success, failure };
+    } finally {
+      setDeleting(false);
+    }
   };
 
-  const removeTorrentFromClient = () => {
-    if (selectedTorrent.hash) networkRequest(deleteTorrent(selectedTorrent.hash).request);
+  const removeTorrentFromClient = async () => {
+    const requests = fileList.map(list => networkRequest(deleteTorrent(list.torrentHash).request));
+    await Promise.all(requests);
     dispatch(toggleDeleteModal(false));
   };
 
   const handleAccept = async () => {
     if (withDataChecked) {
-      const { success, failure } = await deleteSelectedFiles();
+      const { success = [], failure = [] } = await deleteSelectedFiles();
       setDeleteSummary({ success, failure });
 
       if (failure.length > 0) {
@@ -102,55 +168,52 @@ const DeleteTorrentModal = () => {
       }
     }
 
-    removeTorrentFromClient();
+    await removeTorrentFromClient();
   };
 
   useEffect(() => {
-    if (selectedTorrent.hash && withDataChecked) dispatch(getTorrentFileList(selectedTorrent.hash));
-  }, [withDataChecked, selectedTorrent.hash, dispatch]);
-
-  useEffect(() => {
-    if (selectedTorrentFileList.fileList && selectedTorrentFileList.fileList.length > 0) {
-      const checkFilePaths = selectedTorrentFileList.fileList.map(path => [
-        ...selectedTorrentFileList.basePath,
-        ...path,
-      ]);
-      dispatch(checkFilesExist(checkFilePaths));
-    }
-  }, [selectedTorrentFileList.fileList, selectedTorrentFileList.basePath, dispatch]);
-
-  useEffect(() => {
-    if (existingFiles.some(file => file === false)) {
+    if (
+      existingFiles.some(file => {
+        if (file.existingFiles) {
+          return file.existingFiles.some(f => f === false);
+        }
+        return false;
+      })
+    ) {
       setStage(DeleteState.FILES_MISSING);
     }
   }, [existingFiles]);
 
+  useEffect(() => {
+    const checkFiles = async () => {
+      const filesThatExist = await Promise.all(
+        fileList.map(list => {
+          return networkRequest(checkFilesExist(getDeletableFilesFromList(list)).request);
+        }),
+      );
+      setExistingFiles(filesThatExist.map(existingFiles => existingFiles.response));
+    };
+
+    checkFiles();
+  }, [fileList]);
+
   const classes = useStyles();
 
-  const title = selectedTorrent.torrent ? selectedTorrent.torrent.filename : undefined;
-
-  const getSecondaryText = () => {
-    if (selectedTorrent.torrent) {
-      return selectedTorrent.torrent.sizeBytes;
-    }
-  };
-
-  const getExistingFileIcon = (index: number, isFailure: boolean) => {
-    const existingStatus = existingFiles[index];
+  const getExistingFileIcon = (exists: boolean, isFailure: boolean) => {
     if (isFailure) {
       return (
         <Tooltip title="Delete failed">
-          <ClearIcon color="error" />
+          <Clear color="error" />
         </Tooltip>
       );
     }
-    return existingStatus ? (
+    return exists ? (
       <Tooltip title="File found">
-        <CheckIcon />
+        <Check />
       </Tooltip>
     ) : (
       <Tooltip title="File not found">
-        <ClearIcon />
+        <Clear />
       </Tooltip>
     );
   };
@@ -161,33 +224,27 @@ const DeleteTorrentModal = () => {
         return (
           <>
             <Button onClick={handleClose}>Cancel</Button>
-            <Button onClick={handleAccept} color="primary">
-              Delete
-            </Button>
+            <Button onClick={handleAccept}>Delete</Button>
           </>
         );
       case DeleteState.FILES_MISSING:
         return (
           <>
             <Button onClick={handleClose}>Cancel</Button>
-            <Button onClick={handleAccept} color="primary">
-              Delete Anyway
-            </Button>
+            <Button onClick={handleAccept}>Delete Anyway</Button>
           </>
         );
       case DeleteState.FILES_DELETE_FAILED:
         return (
           <>
-            <Button onClick={handleClose} color="primary">
-              Keep
-            </Button>
-            <Button onClick={handleAccept} color="secondary">
-              Remove
-            </Button>
+            <Button onClick={handleClose}>Keep</Button>
+            <Button onClick={handleAccept}>Remove</Button>
           </>
         );
     }
   };
+
+  const theme = useTheme();
 
   return (
     <Dialog open={true} onClose={handleClose} fullWidth scroll="body">
@@ -195,29 +252,39 @@ const DeleteTorrentModal = () => {
 
       <DialogContent className={classes.root}>
         <Typography>{singleDelete}</Typography>
-        <List dense>
-          <ListItem divider>
-            <ListItemText className={classes.torrentRow} primary={title} secondary={getSecondaryText()} />
-          </ListItem>
-        </List>
         <FormControlLabel
           control={<Checkbox checked={withDataChecked} onChange={() => setWithDataChecked(!withDataChecked)} />}
           label="Delete data?"
         />
-        {withDataChecked && (
-          <Paper className={classes.fileListContainer}>
-            <List dense>
-              {selectedTorrentFileList.fileList &&
-                selectedTorrentFileList.fileList.map((file: string[], idx) => (
-                  <ListItem key={idx} divider>
-                    <ListItemText className={classes.torrentRow} primary={file.join('/')} />
-                    {get(existingFiles, file.join('/'))}{' '}
-                    {getExistingFileIcon(idx, includes(deleteSummary.failure, file))}
-                  </ListItem>
-                ))}
+        {fileList.map((list, listIdx) => (
+          <>
+            <List style={{ backgroundColor: darken(theme.palette.background.paper, 0.1) }}>
+              <ListItem>
+                <ListItemText primary={list.torrentName} />
+                <div className={classes.noShrink}>
+                  <StatChip content={list.torrentSize} />
+                </div>
+              </ListItem>
+
+              <Collapse in={withDataChecked} timeout="auto" unmountOnExit>
+                <List dense className={classes.nested}>
+                  {getDeletableFilesFromList(list).map((file: string[], fileIdx) => {
+                    return (
+                      <ListItem key={`${list.torrentHash}-${fileIdx}`} divider>
+                        <ListItemText className={classes.torrentRow} primary={file.join('/')} />
+                        {get(existingFiles[fileIdx], file.join('/'))}
+                        {getExistingFileIcon(
+                          get(existingFiles, `[${listIdx}][${fileIdx}]`, false),
+                          includes(deleteSummary.failure, file),
+                        )}
+                      </ListItem>
+                    );
+                  })}
+                </List>
+              </Collapse>
             </List>
-          </Paper>
-        )}
+          </>
+        ))}
       </DialogContent>
 
       <Alert

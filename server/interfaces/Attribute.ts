@@ -1,7 +1,7 @@
 export interface Attribute {
   xmlName: string | Buffer
   apiName?: string
-  formatResponse? : (responseItem: any) => any
+  formatResponse? : <T>(responseItem: any) => T
 }
 
 export default Attribute;

@@ -1,15 +1,12 @@
 import { Router, NextFunction, Request, Response } from 'express';
+import stopStartSchema from '../schemas/stopStartSchema';
+import { validate } from '../schemas';
 
 import multer from 'multer';
 import {
-  addTorrents,
-  getTorrentFileInfo,
   getAllTorrents,
-  getFileList,
-  hashTorrent,
-  startTorrent,
-  stopTorrent,
-  deleteTorrents
+  stopTorrents,
+  startTorrents
 } from '../controllers/torrent';
 
 const torrentRouter = Router();
@@ -21,15 +18,12 @@ const upload = multer({
 });
 
 torrentRouter.get('/', getAllTorrents);
-torrentRouter.post('/', upload.array('torrents'), addTorrents);
-torrentRouter.post('/fileinfo', upload.array('torrents'), getTorrentFileInfo);
+torrentRouter.post('/stop', stopStartSchema, validate, stopTorrents);
+torrentRouter.post('/start', stopStartSchema, validate, startTorrents);
 
-torrentRouter.get('/:torrentHash/filelist', getFileList);
-torrentRouter.post('/:torrentHash/recheck', hashTorrent);
-torrentRouter.post('/:torrentHash/start', startTorrent);
-torrentRouter.post('/:torrentHash/stop', stopTorrent);
-
-torrentRouter.post('/delete', deleteTorrents);
+// Break this out into separate magnet endpoint
+// torrentRouter.post('/', upload.array('torrents'), addTorrents);
+// torrentRouter.post('/fileinfo', upload.array('torrents'), getTorrentFileInfo);
 
 torrentRouter.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   console.error(err.stack);

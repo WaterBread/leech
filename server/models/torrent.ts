@@ -1,156 +1,156 @@
 import parseTorrent from 'parse-torrent';
-import { methodCall } from '../services/rtorrent';
+// import { Client } from '../services/rtorrent';
 
-import parser from '../services/rtorrent/queryBuilder/parser';
+// import parser from '../services/rtorrent/queryBuilder/parser';
 
-import {
-  MultiCommand, Command,
-  MethodTypes
-} from '../services/rtorrent/queryBuilder/methods';
+// import {
+//   MultiCommand, Command,
+//   MethodTypes
+// } from '../services/rtorrent/queryBuilder/methods';
 
-import * as dCommands from '../services/rtorrent/queryBuilder/attributes/d_commands';
-import * as fCommands from '../services/rtorrent/queryBuilder/attributes/f_commands';
+// import * as dCommands from '../services/rtorrent/attributes/d_commands';
+// import * as fCommands from '../services/rtorrent/attributes/f_commands';
 
-export const getAllTorrents = async () => {
-  const command = new MultiCommand();
-  const method = new Command(MethodTypes.dmulticall);
+// export const getAllTorrents = async () => {
+//   const command = new MultiCommand();
+//   const method = new Command(MethodTypes.dmulticall);
 
-  method.addParameter('');
-  method.addParameter('main');
+//   method.addParameter('');
+//   method.addParameter('main');
 
-  Object.values(dCommands.Attributes).forEach((attr) => {
-    method.addParameter(attr);
-  });
+//   Object.values(dCommands.Attributes).forEach((attr) => {
+//     method.addParameter(attr);
+//   });
 
-  command.addCommand(method);
-  const response = await methodCall(command.serializeMethod());
+//   command.addCommand(method);
+//   const response = await Client.methodCall(command.serializeMethod());
 
-  // Systemcall 0, multicall 0
-  return parser(response[0][0], method.parameters);
-};
+//   // Systemcall 0, multicall 0
+//   return parser(response[0][0], method.parameters);
+// };
 
-export const addTorrent = async (torrentFile: Buffer, destination?: string[]) => {
-  const method = new Command(MethodTypes.loadRaw);
+// export const addTorrent = async (torrentFile: Buffer, destination?: string[]) => {
+//   const method = new Command(MethodTypes.loadRaw);
 
-  method.addParameter('');
-  method.addParameter({ xmlName: torrentFile, apiName: 'torrent' }, true);
+//   method.addParameter('');
+//   method.addParameter({ xmlName: torrentFile, apiName: 'torrent' }, true);
 
-  if (destination) {
-    // TODO: Does this need to be mapped???
-    const filteredDestination = destination.filter(path => !!path);
-    const joinedDestination = filteredDestination.join('/');
-    method.addParameter(
-      { xmlName: `${dCommands.Commands.directorySet.xmlName}"${joinedDestination}"` }, // TODO: Fix this
-      false
-    );
-  }
+//   if (destination) {
+//     // TODO: Does this need to be mapped???
+//     const filteredDestination = destination.filter(path => !!path);
+//     const joinedDestination = filteredDestination.join('/');
+//     method.addParameter(
+//       { xmlName: `${dCommands.Commands.directorySet.xmlName}"${joinedDestination}"` }, // TODO: Fix this
+//       false
+//     );
+//   }
 
-  const response = await methodCall(method.serialize());
-  return parser(response, method.parameters);
-};
+//   const response = await Client.methodCall(method.serialize());
+//   return parser(response, method.parameters);
+// };
 
-export const addMagnet = async (magnetLink: string, destination?: string[]) => {
-  // parseTorrent(magnetLink);
-  const method = new Command(MethodTypes.loadNormal);
+// export const addMagnet = async (magnetLink: string, destination?: string[]) => {
+//   // parseTorrent(magnetLink);
+//   const method = new Command(MethodTypes.loadNormal);
 
-  method.addParameter('');
-  method.addParameter({ xmlName: magnetLink, apiName: magnetLink }, true);
+//   method.addParameter('');
+//   method.addParameter({ xmlName: magnetLink, apiName: magnetLink }, true);
 
-  if (destination) {
-    // TODO: Does this need to be mapped???
-    const filteredDestination = destination.filter(path => !!path);
-    const joinedDestination = filteredDestination.join('/');
-    method.addParameter(
-      { xmlName: `${dCommands.Commands.directorySet.xmlName}${joinedDestination}` },
-      false
-    );
-  }
+//   if (destination) {
+//     // TODO: Does this need to be mapped???
+//     const filteredDestination = destination.filter(path => !!path);
+//     const joinedDestination = filteredDestination.join('/');
+//     method.addParameter(
+//       { xmlName: `${dCommands.Commands.directorySet.xmlName}${joinedDestination}` },
+//       false
+//     );
+//   }
 
-  const response = await methodCall(method.serialize());
-  return parser(response, method.parameters);
-};
+//   const response = await Client.methodCall(method.serialize());
+//   return parser(response, method.parameters);
+// };
 
-interface GetFileListResponse { basePath: string[], fileList: string[] }
-export const getFileList = async (torrentHash: string): Promise<GetFileListResponse> => {
-  const fileListCommand = new Command(MethodTypes.fmulticall);
-  fileListCommand.addParameter(torrentHash);
-  fileListCommand.addParameter('');
+// interface GetFileListResponse { basePath: string[], fileList: string[] }
+// export const getFileList = async (torrentHash: string): Promise<GetFileListResponse> => {
+//   const fileListCommand = new Command(MethodTypes.fmulticall);
+//   fileListCommand.addParameter(torrentHash);
+//   fileListCommand.addParameter('');
 
-  fileListCommand.addParameter(fCommands.pathComponents, true);
+//   fileListCommand.addParameter(fCommands.pathComponents, true);
 
-  const response = await methodCall(fileListCommand.serialize());
+//   const response = await Client.methodCall(fileListCommand.serialize());
 
-  const parsed = parser(response, fileListCommand.parameters);
-  const fileList = parsed.map(file => file.filePathComponents);
+//   const parsed = parser(response, fileListCommand.parameters);
+//   const fileList = parsed.map(file => file.filePathComponents);
 
-  const basePathCommand = new Command(MethodTypes.directoryBase);
-  basePathCommand.addParameter({ xmlName: torrentHash, apiName: 'basePath' });
+//   const basePathCommand = new Command(MethodTypes.directoryBase);
+//   basePathCommand.addParameter({ xmlName: torrentHash, apiName: 'basePath' });
 
-  const basePathResponse = await methodCall(basePathCommand.serialize());
-  const basePathParsed = parser(basePathResponse, basePathCommand.parameters);
+//   const basePathResponse = await Client.methodCall(basePathCommand.serialize());
+//   const basePathParsed = parser(basePathResponse, basePathCommand.parameters);
 
-  const splitBasePath: string[] = basePathParsed.basePath.split('/');
-  console.log(splitBasePath);
-  splitBasePath.shift();
-  // const basePath = getMappedDirectory(splitBasePath);
+//   const splitBasePath: string[] = basePathParsed.basePath.split('/');
+//   console.log(splitBasePath);
+//   splitBasePath.shift();
+//   // const basePath = getMappedDirectory(splitBasePath);
 
-  return { basePath: splitBasePath, fileList };
-};
+//   return { basePath: splitBasePath, fileList };
+// };
 
-export const startTorrent = async (torrentHash: string) => {
-  const command = new MultiCommand();
-  const method = new Command(MethodTypes.tryStart);
+// export const startTorrent = async (torrentHash: string) => {
+//   const command = new MultiCommand();
+//   const method = new Command(MethodTypes.tryStart);
 
-  method.addParameter({ xmlName: torrentHash, apiName: torrentHash });
+//   method.addParameter({ xmlName: torrentHash, apiName: torrentHash });
 
-  command.addCommand(method);
-  const [response] = await methodCall(command.serializeMethod());
-  return parser(response[0], method.parameters);
-};
+//   command.addCommand(method);
+//   const [response] = await Client.methodCall(command.serializeMethod());
+//   return parser(response[0], method.parameters);
+// };
 
-export const stopTorrent = async (torrentHash: string) => {
-  const method = new Command(MethodTypes.tryStop);
+// export const stopTorrent = async (torrentHash: string) => {
+//   const method = new Command(MethodTypes.tryStop);
 
-  console.log(torrentHash);
-  method.addParameter({ xmlName: torrentHash, apiName: torrentHash });
+//   console.log(torrentHash);
+//   method.addParameter({ xmlName: torrentHash, apiName: torrentHash });
 
-  const response = await methodCall(method.serialize());
-  return parser(response, method.parameters);
-};
+//   const response = await Client.methodCall(method.serialize());
+//   return parser(response, method.parameters);
+// };
 
-export const deleteTorrents = async (torrentHash: string, withData = false) => {
-  const command = new MultiCommand();
-  const method = new Command(MethodTypes.erase);
+// export const deleteTorrents = async (torrentHash: string, withData = false) => {
+//   const command = new MultiCommand();
+//   const method = new Command(MethodTypes.erase);
 
-  method.addParameter({ xmlName: torrentHash, apiName: torrentHash });
-  command.addCommand(method);
+//   method.addParameter({ xmlName: torrentHash, apiName: torrentHash });
+//   command.addCommand(method);
 
-  const [response] = await methodCall(command.serializeMethod());
-  return parser(response[0], method.parameters);
-};
+//   const [response] = await Client.methodCall(command.serializeMethod());
+//   return parser(response[0], method.parameters);
+// };
 
-export const recheckTorrent = async (torrentHash: string) => {
-  const command = new MultiCommand();
-  const method = new Command(MethodTypes.checkHash);
+// export const recheckTorrent = async (torrentHash: string) => {
+//   const command = new MultiCommand();
+//   const method = new Command(MethodTypes.checkHash);
 
-  method.addParameter({ xmlName: torrentHash, apiName: torrentHash });
-  command.addCommand(method);
+//   method.addParameter({ xmlName: torrentHash, apiName: torrentHash });
+//   command.addCommand(method);
 
-  const [response] = await methodCall(command.serializeMethod());
-  return parser(response[0], method.parameters);
-};
+//   const [response] = await Client.methodCall(command.serializeMethod());
+//   return parser(response[0], method.parameters);
+// };
 
-export const getTorrentInfo = (torrent: Buffer) => {
-  const parsedTorrent: any = parseTorrent(torrent);
-  return {
-    hash: parsedTorrent.infoHash,
-    filesize: parsedTorrent.length,
-    files: parsedTorrent.files,
-    announceUrls: parsedTorrent.announce
-  };
-};
+// export const getTorrentInfo = (torrent: Buffer) => {
+//   const parsedTorrent: any = parseTorrent(torrent);
+//   return {
+//     hash: parsedTorrent.infoHash,
+//     filesize: parsedTorrent.length,
+//     files: parsedTorrent.files,
+//     announceUrls: parsedTorrent.announce
+//   };
+// };
 
-// export const getAllTrackers = () => {
-//   const method = new Method(MethodTypes.dmulticall);
+// // export const getAllTrackers = () => {
+// //   const method = new Method(MethodTypes.dmulticall);
 
-// }
+// // }

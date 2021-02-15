@@ -15,11 +15,15 @@ interface FileListResponse {
   files: File[]
 }
 
+const unescapeSpecialCharacters = (value: string) => {
+  // For now I just need to filter out the &amp; chars
+  return value.replace(/&amp;/g, '&');
+};
+
 export const getFilePath = (directory: string[], fileName?: string) => {
   const fullPath = fileName ? [...directory, fileName] : directory;
   return fullPath.length === 0 ? sep : fullPath.reduce((prev, current) => {
-    if (!prev) return `${current}`;
-    else return `${prev}${sep}${current}`;
+    return `${prev}${sep}${unescapeSpecialCharacters(current)}`;
   }, '');
 };
 
@@ -30,54 +34,25 @@ export const replaceFirstElementInArray = (arr: string[], stringToReplace: strin
   return [replacedPath, ...copiedPath];
 };
 
-interface MappedDirectory { torrentPath: string[], serverPath: string[] }
-export const getMappedDirectory = (pathToReplace: string[]): MappedDirectory => {
-  const LOCAL_ROOT = process.env.LOCAL_ROOT;
-  const REMOTE_ROOT = process.env.REMOTE_ROOT;
-
-  const nonBlankPath = pathToReplace.filter(path => path !== '');
-
-  if (nonBlankPath.length > 0) {
-    if (LOCAL_ROOT && REMOTE_ROOT) {
-      if (nonBlankPath[0].includes(LOCAL_ROOT)) {
-        const replacedPath = replaceFirstElementInArray(nonBlankPath, LOCAL_ROOT, REMOTE_ROOT);
-        return { torrentPath: replacedPath, serverPath: nonBlankPath };
-      }
-
-      if (nonBlankPath[0].includes(REMOTE_ROOT)) {
-        const replacedPath = replaceFirstElementInArray(nonBlankPath, REMOTE_ROOT, LOCAL_ROOT);
-        return { torrentPath: nonBlankPath, serverPath: replacedPath };
-      }
-    }
-  }
-
-  const torrentPath = REMOTE_ROOT ? [REMOTE_ROOT, ...nonBlankPath] : nonBlankPath;
-  const serverPath = LOCAL_ROOT ? [LOCAL_ROOT, ...nonBlankPath] : nonBlankPath;
-
-  return { torrentPath, serverPath };
-};
-
 export const getFileList = async (directory = [] as string[]): Promise<FileListResponse> => {
-  const rootPath = getMappedDirectory(directory);
-  const directoryPath = getFilePath(rootPath.serverPath);
-
+  const directoryPath = getFilePath(directory);
   const files = await promises.readdir(directoryPath);
   return {
     directory: directory,
     files: await Promise.all(files.map(async (file) => {
       try {
-        const fileStats = await promises.stat(getFilePath(rootPath.serverPath, file));
+        const fileStats = await promises.stat(getFilePath(directory, file));
 
         return {
           name: file,
-          path: [...rootPath.torrentPath, file],
+          path: [...directory, file],
           isDirectory: fileStats.isDirectory(),
           size: fileStats.size,
           hasPermission: true
         };
       } catch (err) {
         console.warn(err);
-        return { name: file, path: [...rootPath.torrentPath, file], isDirectory: false, hasPermission: false };
+        return { name: file, path: [...directory, file], isDirectory: false, hasPermission: false };
       }
     }))
   };
@@ -100,8 +75,7 @@ export const getAllFilesList = async (directory = [] as string[]) => {
 
 export const checkFilesExist = (filePaths: string[][]) => {
   return filePaths.map((filepath) => {
-    const rootPath = getMappedDirectory(filepath);
-    const joinedPath = getFilePath(rootPath.serverPath);
+    const joinedPath = getFilePath(filepath);
     return existsSync(joinedPath);
   });
 };
@@ -110,8 +84,7 @@ interface DeleteFilesResponse { success: boolean, filepath: string[] }
 export const deleteFiles = async (filePaths: string[][]): Promise<DeleteFilesResponse[]> => {
   return await Promise.all(filePaths.map(async filepath => {
     return await new Promise<DeleteFilesResponse>((resolve) => {
-      const rootPath = getMappedDirectory(filepath);
-      const joinedPath = getFilePath(rootPath.serverPath);
+      const joinedPath = getFilePath(filepath);
 
       console.log('rimraf', joinedPath);
       rimraf(joinedPath, (err) => {

@@ -19,11 +19,11 @@ const useStyles = makeStyles((theme: Theme) => ({
 }));
 
 interface Props {
-  isSelected: boolean;
+  isSelected?: boolean;
   content: string | number;
 }
 
-const StatChip = ({ isSelected, content }: Props) => {
+const StatChip = ({ isSelected = false, content }: Props) => {
   const classes = useStyles();
 
   const chipClasses = [classes.chip];

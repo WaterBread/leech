@@ -1,21 +1,16 @@
 import React from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import TextField from '@material-ui/core/TextField';
-import { makeStyles, withStyles, Theme } from '@material-ui/core/styles';
+import { withStyles, Theme } from '@material-ui/core/styles';
 
 import { changeSearchText } from 'actions/toolbar';
 import { getSearchTerm } from 'selectors/toolbar';
-
-const useStyles = makeStyles((theme: Theme) => ({
-  root: {
-    // padding: theme.spacing(2),
-  },
-}));
 
 const ThemedTextField = withStyles((theme: Theme) => {
   const fontColor = theme.palette.getContrastText(theme.palette.primary.main);
   return {
     root: {
+      width: '100%',
       '& .MuiInput-root': {
         color: fontColor,
       },
@@ -40,11 +35,10 @@ const ThemedTextField = withStyles((theme: Theme) => {
 
 const SearchBar = () => {
   const dispatch = useDispatch();
-  const classes = useStyles();
   const searchTerm = useSelector(getSearchTerm);
 
   return (
-    <div className={classes.root}>
+    <div>
       <ThemedTextField
         label="Search"
         value={searchTerm}

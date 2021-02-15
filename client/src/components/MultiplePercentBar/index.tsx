@@ -18,6 +18,7 @@ interface ItemStat {
   label: string;
   value: number; // Number between 0 - 100
   color: string; // Hex color string
+  tooltip?: string;
 }
 
 interface Props {
@@ -31,7 +32,7 @@ const MultiplePercentBar = ({ items }: Props) => {
     <div className={classes.root}>
       {items.map(item => (
         <div key={item.label} className={classes.item} style={{ flexBasis: `${item.value}%` }}>
-          <Tooltip placement="top" title={`${item.value}%`}>
+          <Tooltip placement="top" title={item.tooltip ? item.tooltip : item.value}>
             <div style={{ backgroundColor: item.color, height: '100%' }} />
           </Tooltip>
         </div>

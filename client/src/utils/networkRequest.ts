@@ -7,7 +7,7 @@ export default async (action: RequestActionData) => {
     body: action.payload || null,
   };
 
-  const endpoint = `${process.env.REACT_APP_API_URL}/${action.endpoint}`;
+  const endpoint = `http://${process.env.REACT_APP_API_URL}/${action.endpoint}`;
 
   const response = await fetch(endpoint, fetchOptions);
   try {

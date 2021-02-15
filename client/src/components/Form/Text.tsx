@@ -9,13 +9,22 @@ interface Props {
   helperText?: string;
   label?: string;
   validate?: validateFunction;
+  type?: 'number' | 'text';
+  variant?: 'standard' | 'filled' | 'outlined' | undefined;
 }
 
-const Text = ({ name, helperText, label, validate }: Props) => {
+const parseNumber = (value: any) => {
+  console.log('parseNumber', isNaN(value), value);
+  if (isNaN(value)) return value;
+  else return Number(value);
+};
+
+const Text = ({ name, helperText, label, validate, type = 'text', variant }: Props) => {
   return (
-    <Field name={name} validate={validate}>
+    <Field name={name} validate={validate} parse={type === 'number' ? parseNumber : undefined}>
       {({ input: { name, onChange, value, ...restInput }, meta, ...rest }) => {
         const showError = meta.error && meta.touched;
+        console.log(value, typeof value);
         return (
           <TextField
             {...rest}
@@ -26,6 +35,8 @@ const Text = ({ name, helperText, label, validate }: Props) => {
             onChange={onChange}
             value={value}
             label={label}
+            type={type}
+            variant={variant as any}
           />
         );
       }}

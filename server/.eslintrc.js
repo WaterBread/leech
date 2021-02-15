@@ -12,6 +12,7 @@ module.exports = {
     "@typescript-eslint/strict-boolean-expressions": 0,
     "comma-dangle": ["error", "never"],
     "semi": ["error", "always"],
+    "@typescript-eslint/semi": ["error", "always"],
     "@typescript-eslint/promise-function-async": 0,
     "max-len": ["error", {"code": 120, "ignoreUrls": true}]
   },

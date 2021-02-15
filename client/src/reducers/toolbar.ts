@@ -3,9 +3,11 @@ import {
   CHANGE_SEARCH_TERM,
   CHANGE_STATUS_FILTER,
   DELETE_MODAL_VISIBLE,
-  CHANGE_SELECTED_TORRENT,
+  CHANGE_SELECTED_TORRENTS,
   CHANGE_TRACKER_FILTER,
   SETTINGS_MODAL_VISIBLE,
+  ADD_SELECTED_TORRENTS,
+  REMOVE_SELECTED_TORRENTS,
 } from 'actions/toolbar';
 
 import { TorrentStatues } from 'interfaces/torrentStatusSummary';
@@ -14,9 +16,10 @@ const initialState = {
   addModalVisible: false,
   searchTerm: '',
   status: TorrentStatues.ALL,
+  selectedTorrentHashes: [],
 };
 
-export default (state: {} = initialState, action: any) => {
+export default (state = initialState, action: any) => {
   switch (action.type) {
     case ADD_MODAL_VISIBLE:
       return {
@@ -33,10 +36,20 @@ export default (state: {} = initialState, action: any) => {
         ...state,
         settingsModalVisible: action.isOpen,
       };
-    case CHANGE_SELECTED_TORRENT:
+    case CHANGE_SELECTED_TORRENTS:
       return {
         ...state,
-        selectedTorrentHash: action.hash,
+        selectedTorrentHashes: action.hashes,
+      };
+    case ADD_SELECTED_TORRENTS:
+      return {
+        ...state,
+        selectedTorrentHashes: [...state.selectedTorrentHashes, ...action.hashes],
+      };
+    case REMOVE_SELECTED_TORRENTS:
+      return {
+        ...state,
+        selectedTorrentHashes: state.selectedTorrentHashes.filter(hash => !action.hashes.includes(hash)),
       };
     case CHANGE_SEARCH_TERM:
       return {

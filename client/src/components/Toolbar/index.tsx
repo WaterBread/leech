@@ -1,23 +1,20 @@
-import React from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { toggleAddModal, toggleDeleteModal, toggleSettingsModal } from 'actions/toolbar';
-import { stopTorrent, startTorrent, recheckTorrent } from 'actions/torrents';
-
 import AppBar from '@material-ui/core/AppBar';
+import Divider from '@material-ui/core/Divider';
 import IconButton from '@material-ui/core/IconButton';
 import { makeStyles } from '@material-ui/core/styles';
 import Toolbar from '@material-ui/core/Toolbar';
-import Divider from '@material-ui/core/Divider';
-
 import AddIcon from '@material-ui/icons/Add';
 import CreateIcon from '@material-ui/icons/Create';
-import SyncIcon from '@material-ui/icons/Sync';
-import StopIcon from '@material-ui/icons/Stop';
-import PlayIcon from '@material-ui/icons/PlayArrow';
 import DeleteIcon from '@material-ui/icons/Delete';
+import PlayIcon from '@material-ui/icons/PlayArrow';
 import SettingsIcon from '@material-ui/icons/Settings';
-
-import { getSelectedTorrent } from 'selectors/toolbar';
+import StopIcon from '@material-ui/icons/Stop';
+import SyncIcon from '@material-ui/icons/Sync';
+import { toggleAddModal, toggleDeleteModal, toggleSettingsModal } from 'actions/toolbar';
+import { recheckTorrent, startTorrent, stopTorrent } from 'actions/torrents';
+import React from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { getSelectedTorrents } from 'selectors/toolbar';
 
 const useStyles = makeStyles(theme => ({
   root: {
@@ -32,8 +29,8 @@ const ToolbarComponent = () => {
   const classes = useStyles();
   const dispatch = useDispatch();
 
-  const selectedTorrent = useSelector(getSelectedTorrent);
-  const hasTarget = !!selectedTorrent.torrent;
+  const selectedTorrents = useSelector(getSelectedTorrents);
+  const hasTarget = selectedTorrents.length > 0;
 
   return (
     <AppBar position="static">
@@ -56,7 +53,9 @@ const ToolbarComponent = () => {
           className={classes.menuButton}
           color="inherit"
           onClick={() => {
-            if (selectedTorrent.torrent) dispatch(startTorrent(selectedTorrent.torrent.hash));
+            selectedTorrents.forEach(torrent => {
+              dispatch(startTorrent(torrent.hash));
+            });
           }}
         >
           <PlayIcon />
@@ -67,7 +66,9 @@ const ToolbarComponent = () => {
           className={classes.menuButton}
           color="inherit"
           onClick={() => {
-            if (selectedTorrent.torrent) dispatch(stopTorrent(selectedTorrent.torrent.hash));
+            selectedTorrents.forEach(torrent => {
+              dispatch(stopTorrent(torrent.hash));
+            });
           }}
         >
           <StopIcon />
@@ -78,7 +79,9 @@ const ToolbarComponent = () => {
           className={classes.menuButton}
           color="inherit"
           onClick={() => {
-            if (selectedTorrent.torrent) dispatch(recheckTorrent(selectedTorrent.torrent.hash));
+            selectedTorrents.forEach(torrent => {
+              dispatch(recheckTorrent(torrent.hash));
+            });
           }}
         >
           <SyncIcon />

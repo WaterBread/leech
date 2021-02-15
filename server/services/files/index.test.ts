@@ -52,34 +52,6 @@ describe('FilesService', () => {
       expect(arr).toStrictEqual(['oldString', 'notReplaceThis']);
     });
   });
-  describe('getMappedDirectory', () => {
-    it('it should take a path and return both server and local path', () => {
-      const mappedDir = files.getMappedDirectory(['one', 'two']);
-      expect(mappedDir.serverPath).toStrictEqual(['one', 'two']);
-      expect(mappedDir.torrentPath).toStrictEqual(['one', 'two']);
-    });
-
-    it('it should remove all the blank string paths from the array', () => {
-      const mappedDir = files.getMappedDirectory(['', 'one', '', 'two']);
-      expect(mappedDir.serverPath).toStrictEqual(['one', 'two']);
-      expect(mappedDir.torrentPath).toStrictEqual(['one', 'two']);
-    });
-
-    it('it should replace the alias paths', () => {
-      process.env.REMOTE_ROOT = 'SERVER_ROOT';
-      process.env.LOCAL_ROOT = 'LOCAL_ROOT';
-      const mappedDir = files.getMappedDirectory(['SERVER_ROOT', 'one', 'two']);
-      expect(mappedDir.serverPath).toStrictEqual(['LOCAL_ROOT', 'one', 'two']);
-      expect(mappedDir.torrentPath).toStrictEqual([
-        'SERVER_ROOT',
-        'one',
-        'two'
-      ]);
-
-      delete process.env.REMOTE_ROOT;
-      delete process.env.LOCAL_ROOT;
-    });
-  });
   describe('checkFilesExist', () => {});
   describe('getFilePath', () => {});
   describe('deleteFiles', () => {

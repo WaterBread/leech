@@ -11,6 +11,7 @@ import {
 import get from 'lodash/get';
 
 import { Form, Field } from 'react-final-form';
+import Text from 'components/Form/Text';
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { changeLocalSetting } from 'actions/settings';
@@ -67,6 +68,22 @@ const ColorSettings = () => {
       {props => (
         // eslint-disable-next-line react/prop-types
         <form className={classes.column} onSubmit={props.handleSubmit}>
+          <PageHeader title="Appearance" subtitle="Other options to configure the UI" />
+          <Text
+            name="spacing"
+            label="Theme Spacing"
+            type="number"
+            validate={isNaN}
+            helperText="Must be a valid number"
+          />
+          <Text
+            name="typography.fontSize"
+            label="Font Size"
+            type="number"
+            validate={isNaN}
+            helperText="Must be a valid number"
+          />
+
           <PageHeader title="Color Settings" subtitle="Choose a theme or manually configure the theme colors" />
 
           <div className={classes.carousel}>
@@ -88,6 +105,7 @@ const ColorSettings = () => {
             control={
               <Field name={'palette.type'}>
                 {({ input: { name, onChange, value, ...restInput }, ...rest }) => {
+                  console.log(value);
                   return (
                     <Switch
                       {...rest}
@@ -95,8 +113,9 @@ const ColorSettings = () => {
                       value={value}
                       checked={value === 'dark'}
                       inputProps={restInput}
-                      onChange={(e, checked) => {
-                        const mode = checked ? 'dark' : 'light';
+                      onChange={() => {
+                        const checked = value === 'dark';
+                        const mode = checked ? 'light' : 'dark';
                         onChange(mode);
                       }}
                     />
